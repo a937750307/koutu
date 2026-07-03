@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>在线抠图</title>
+  <meta name="description" content="在线 AI 抠图工具，纯本地处理，图片不会上传至任何服务器" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="manifest" href="/manifest.json" />
+  <!-- 内联关键样式，防止 JS 注入 CSS 前的闪烁 -->
+  <style>
+    html,body{margin:0;padding:0;background:#fff;color:#2c2c2c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
+    #editor-view{display:none}
+  </style>
+</head>
+<body>
+
+  <!-- ============ 首页 ============ -->
+   <!-- ============ 忆痕发布页 www.937788.xyz ============ -->
+  <div id="home-view">
+    <div class="brand">在线抠图</div>
+    <div class="subtitle">适用于纯色背景图片，复杂背景效果可能不佳</div>
+
+    <div id="drop-zone" class="drop-zone">
+      <span class="drop-zone-text">拖入图片或点击选择</span>
+      <span class="drop-zone-hint">支持 JPG / PNG / WebP</span>
+      <span class="drop-zone-notice">首次使用将下载AI模型（约176MB），后续自动缓存</span>
+      <span class="drop-zone-notice">纯本地处理 &middot; 图片不会上传至任何服务器</span>
+    </div>
+    <a class="tools-link" href="https://www.937788.xyz" target="_blank" rel="noopener noreferrer">更多工具尽在忆痕发布页</a>
+    <input type="file" id="file-input" accept="image/*" hidden />
+  </div>
+
+  <!-- ============ 编辑页 ============ -->
+  <div id="editor-view">
+    <header class="editor-header">
+      <div class="editor-header-left">
+        <button class="btn-back" id="btn-back">返回</button>
+        <span class="editor-filename" id="editor-filename"></span>
+      </div>
+      <div class="editor-header-actions">
+        <button class="theme-toggle" id="theme-toggle" title="切换深色模式">
+          <span id="theme-icon">☾</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="editor-main">
+      <!-- 画布区域 -->
+      <div id="canvas-area" class="canvas-area">
+        <!-- 原图缩略图 -->
+        <img id="original-thumb" class="original-thumb" alt="原图" style="display:none" />
+        <div id="canvas-container" class="canvas-container checkerboard" style="transform: translate(0px, 0px) scale(1)">
+          <canvas id="display-canvas"></canvas>
+        </div>
+
+        <!-- 处理遮罩 -->
+        <div id="processing-overlay" class="processing-overlay" style="display:none">
+          <div class="spinner"></div>
+          <span id="progress-text" class="processing-text">正在加载 AI 模型...</span>
+          <div class="progress-bar-track">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 控制面板 -->
+      <aside class="controls-panel">
+
+        <!-- 自动抠图 -->
+        <div class="control-group">
+          <button id="btn-auto-matting" class="action-btn primary">自动抠图</button>
+        </div>
+
+        <!-- 背景处理 -->
+        <div class="control-group">
+          <div class="control-label">背景</div>
+          <div class="bg-mode-buttons">
+            <button class="bg-mode-btn active" data-bg="transparent">透明</button>
+            <button class="bg-mode-btn" data-bg="color">纯色</button>
+            <button class="bg-mode-btn" data-bg="blur">模糊原图</button>
+          </div>
+          <div id="color-controls" style="display:none; margin-top: 0.5rem;">
+            <div class="color-input-wrapper">
+              <input type="color" id="bg-color" class="color-input" value="#ffffff" />
+              <span id="color-hex" class="color-hex">#ffffff</span>
+            </div>
+            <div class="color-presets">
+              <span class="color-preset selected" data-color="#ffffff" style="background:#fff"></span>
+              <span class="color-preset" data-color="#f87171" style="background:#f87171"></span>
+              <span class="color-preset" data-color="#60a5fa" style="background:#60a5fa"></span>
+              <span class="color-preset" data-color="#34d399" style="background:#34d399"></span>
+              <span class="color-preset" data-color="#fbbf24" style="background:#fbbf24"></span>
+              <span class="color-preset" data-color="#a78bfa" style="background:#a78bfa"></span>
+              <span class="color-preset" data-color="#f472b6" style="background:#f472b6"></span>
+              <span class="color-preset" data-color="#000000" style="background:#000"></span>
+            </div>
+          </div>
+          <div id="blur-controls" style="display:none; margin-top: 0.5rem;">
+            <input type="range" id="blur-strength" class="range-slider" min="1" max="40" value="10" />
+            <div class="range-value"><span id="blur-val">10px</span></div>
+          </div>
+        </div>
+
+        <!-- 导出 -->
+        <div class="control-group">
+          <div class="control-label">导出</div>
+          <div class="export-row">
+            <select id="export-format">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+          <input type="number" id="export-scale" class="export-scale-input" value="100" min="10" max="400" />
+          <div id="export-res" class="export-res">输出尺寸: - x -</div>
+          <button id="btn-export" class="action-btn primary">导出图片</button>
+        </div>
+
+      </aside>
+    </main>
+  </div>
+
+  <!-- 备案信息 -->
+  <div class="beian-bar">
+    <div class="beian-pc">
+      <span class="beian-disclaimer">本站内容仅供学习和交流，非商业用途</span>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="beian-icp">浙ICP备2025187466号</a>
+      <a href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33030402001483" target="_blank" rel="noopener noreferrer" class="beian-gongan">
+        <img src="https://www.937788.xyz/gonganbeian.png" alt="公安备案" onerror="this.style.display='none'">
+        浙公网安备33030402001483号
+      </a>
+    </div>
+    <div class="beian-mobile">
+      <span class="beian-disclaimer">本站内容仅供学习和交流，非商业用途</span>
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="beian-icp">浙ICP备2025187466号</a>
+      <a href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33030402001483" target="_blank" rel="noopener noreferrer" class="beian-gongan">
+        <img src="https://www.937788.xyz/gonganbeian.png" alt="公安备案" onerror="this.style.display='none'">
+        浙公网安备33030402001483号
+      </a>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

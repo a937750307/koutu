@@ -1,0 +1,12 @@
+{
+  "name": "简易抠图",
+  "short_name": "抠图",
+  "description": "纯本地图像抠图工具",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
